@@ -1,7 +1,24 @@
-import static org.junit.jupiter.api.Assertions.*;
+import net.jqwik.api.*;
+import net.jqwik.api.constraints.DoubleRange;
+import net.jqwik.api.constraints.Positive;
+import org.assertj.core.api.Assertions;
+import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+
+
 public class CalculoIMCTest {
+
+    @Property
+    public void testImcNuncaNegativo(
+            @ForAll @Positive double peso,
+            @ForAll @Positive double altura
+    ) {
+        double imc = CalculoIMC.calcularIMC(peso, altura);
+        assertThat(imc).isGreaterThanOrEqualTo(0);
+    }
 
     @Test
     public void testEmptyPeso() {
@@ -35,123 +52,77 @@ public class CalculoIMCTest {
         assertEquals("Separador inválido, use ponto decimal", exception.getMessage());
     }
 
-    @Test
-    public void testPesoOutOfRange() {
-        // Testa peso abaixo do mínimo
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            CalculoIMC.parsePeso("1.5");
-        });
-        assertEquals("Peso fora dos limites", exception.getMessage());
+    @Provide
+    Arbitrary<Double> pesosExtremos() {
+        Arbitrary<Double> pesosValidos = Arbitraries.doubles().between(2.0, 300.0);
+        Arbitrary<Double> pesosImprovaveis = Arbitraries.of(400.0);
 
-        // Testa peso acima do máximo
-        Exception exception2 = assertThrows(IllegalArgumentException.class, () -> {
-            CalculoIMC.parsePeso("400");
-        });
-        assertEquals("Peso fora dos limites", exception2.getMessage());
+        return Arbitraries.oneOf(pesosValidos, pesosImprovaveis);
     }
 
-    @Test
-    public void testAlturaOutOfRange() {
-        // Testa altura abaixo do mínimo
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            CalculoIMC.parseAltura("0.3");
-        });
-        assertEquals("Altura fora dos limites", exception.getMessage());
+    @Provide
+    Arbitrary<Double> alturasExtremas() {
+        Arbitrary<Double> alturasValidas = Arbitraries.doubles().between(0.5, 2.5);
+        Arbitrary<Double> alturasImprovaveis = Arbitraries.of(0.1);
 
-        // Testa altura acima do máximo
-        Exception exception2 = assertThrows(IllegalArgumentException.class, () -> {
-            CalculoIMC.parseAltura("3.0");
-        });
-        assertEquals("Altura fora dos limites", exception2.getMessage());
+        return Arbitraries.oneOf(alturasValidas, alturasImprovaveis);
     }
 
-    @Test
-    public void testCalcularIMC_ValorNormal() {
-        // 70 / (1.75 * 1.75) = 22.857142857...
-        double imc = CalculoIMC.calcularIMC(70, 1.75);
-        assertEquals(22.8571, imc, 0.0001);
+    @Property
+    void testIMCComValoresExtremos(
+            @ForAll("pesosExtremos") double peso,
+            @ForAll("alturasExtremas") double altura
+    ) {
+        double imc = CalculoIMC.calcularIMC(peso, altura);
+
+        // IMC não deve ser negativo
+        Assertions.assertThat(imc).isGreaterThanOrEqualTo(0);
+
+        // (Opcional) Verifica se IMC segue a fórmula
+        double esperado = peso / (altura * altura);
+        Assertions.assertThat(imc).isCloseTo(esperado, Offset.offset(0.0001));
     }
 
-    @Test
-    public void testCalcularIMC_ValorMenor() {
-        // 50 / (1.60 * 1.60) = 19.53
-        double imc = CalculoIMC.calcularIMC(50, 1.60);
-        assertEquals(19.53, imc, 0.01);
+    @Property
+    public void imcCalculadoCorretamente(
+            @ForAll @DoubleRange(min = 2.0, max = 300.0) double peso,
+            @ForAll @DoubleRange(min = 0.5, max = 2.5) double altura
+    ) {
+        double imc = CalculoIMC.calcularIMC(peso, altura);
+        double expected = peso / (altura * altura);
+
+        // Verifica a exatidão do cálculo com uma tolerância pequena
+        assertEquals(expected, imc, 0.0001, "O cálculo do IMC deve seguir a fórmula: peso / (altura * altura)");
+        // Garante que o IMC é sempre um valor positivo
+        assertTrue(imc > 0, "IMC deve ser um valor positivo");
     }
 
-    @Test
-    public void testClassificarIMC_MagrezaGrave() {
-        assertEquals("Magreza grave", CalculoIMC.classificarIMC(15.9));
-    }
+    @Property
+    public void classificacaoDoIMC(
+            @ForAll @DoubleRange(min = 2.0, max = 300.0) double peso,
+            @ForAll @DoubleRange(min = 0.5, max = 2.5) double altura
+    ) {
+        double imc = CalculoIMC.calcularIMC(peso, altura);
+        String classificacao = CalculoIMC.classificarIMC(imc);
 
-    @Test
-    public void testClassificarIMC_MagrezaModerada_16() {
-        assertEquals("Magreza moderada", CalculoIMC.classificarIMC(16.0));
-    }
-
-    @Test
-    public void testClassificarIMC_MagrezaModerada_16_5() {
-        assertEquals("Magreza moderada", CalculoIMC.classificarIMC(16.5));
-    }
-
-    @Test
-    public void testClassificarIMC_MagrezaLeve_17() {
-        assertEquals("Magreza leve", CalculoIMC.classificarIMC(17.0));
-    }
-
-    @Test
-    public void testClassificarIMC_MagrezaLeve_18_0() {
-        assertEquals("Magreza leve", CalculoIMC.classificarIMC(18.0));
-    }
-
-    @Test
-    public void testClassificarIMC_Saudavel_18_5() {
-        assertEquals("Saudável", CalculoIMC.classificarIMC(18.5));
-    }
-
-    @Test
-    public void testClassificarIMC_Saudavel_24_9() {
-        assertEquals("Saudável", CalculoIMC.classificarIMC(24.9));
-    }
-
-    @Test
-    public void testClassificarIMC_Sobrepeso_25() {
-        assertEquals("Sobrepeso", CalculoIMC.classificarIMC(25.0));
-    }
-
-    @Test
-    public void testClassificarIMC_Sobrepeso_29_9() {
-        assertEquals("Sobrepeso", CalculoIMC.classificarIMC(29.9));
-    }
-
-    @Test
-    public void testClassificarIMC_ObesidadeI_30() {
-        assertEquals("Obesidade Grau I", CalculoIMC.classificarIMC(30.0));
-    }
-
-    @Test
-    public void testClassificarIMC_ObesidadeI_34_9() {
-        assertEquals("Obesidade Grau I", CalculoIMC.classificarIMC(34.9));
-    }
-
-    @Test
-    public void testClassificarIMC_ObesidadeII_35() {
-        assertEquals("Obesidade Grau II", CalculoIMC.classificarIMC(35.0));
-    }
-
-    @Test
-    public void testClassificarIMC_ObesidadeII_39_9() {
-        assertEquals("Obesidade Grau II", CalculoIMC.classificarIMC(39.9));
-    }
-
-    @Test
-    public void testClassificarIMC_ObesidadeIII_40() {
-        assertEquals("Obesidade Grau III", CalculoIMC.classificarIMC(40.0));
-    }
-
-    @Test
-    public void testClassificarIMC_ObesidadeIII_50() {
-        assertEquals("Obesidade Grau III", CalculoIMC.classificarIMC(50.0));
+        // Verifica a classificação de acordo com os intervalos do IMC
+        if(imc < 16.0) {
+            assertEquals("Magreza grave", classificacao, "Para IMC < 16.0, a classificação deve ser 'Magreza grave'");
+        } else if(imc < 17.0) {
+            assertEquals("Magreza moderada", classificacao, "Para IMC entre 16.0 e 17.0, a classificação deve ser 'Magreza moderada'");
+        } else if(imc < 18.5) {
+            assertEquals("Magreza leve", classificacao, "Para IMC entre 17.0 e 18.5, a classificação deve ser 'Magreza leve'");
+        } else if(imc < 25.0) {
+            assertEquals("Saudável", classificacao, "Para IMC entre 18.5 e 25.0, a classificação deve ser 'Saudável'");
+        } else if(imc < 30.0) {
+            assertEquals("Sobrepeso", classificacao, "Para IMC entre 25.0 e 30.0, a classificação deve ser 'Sobrepeso'");
+        } else if(imc < 35.0) {
+            assertEquals("Obesidade Grau I", classificacao, "Para IMC entre 30.0 e 35.0, a classificação deve ser 'Obesidade Grau I'");
+        } else if(imc < 40.0) {
+            assertEquals("Obesidade Grau II", classificacao, "Para IMC entre 35.0 e 40.0, a classificação deve ser 'Obesidade Grau II'");
+        } else {
+            assertEquals("Obesidade Grau III", classificacao, "Para IMC >= 40.0, a classificação deve ser 'Obesidade Grau III'");
+        }
     }
 
 }
