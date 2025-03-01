@@ -11,6 +11,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class CalculoIMCTest {
 
+    //Método para verificar se o cálculo do IMC está correto
+    private void assertCalculoIMCCorreto(double peso, double altura) {
+        double imc = CalculoIMC.calcularIMC(peso, altura);
+        double esperado = peso / (altura * altura);
+        // Verifica se o cálculo segue a fórmula com precisão
+        assertEquals(esperado, imc, 0.0001, "O cálculo do IMC deve seguir a fórmula: peso / (altura * altura)");
+        // Garante que o IMC seja um valor positivo
+        assertTrue(imc > 0, "IMC deve ser um valor positivo");
+    }
+
     @Property
     public void testImcNuncaNegativo(
             @ForAll @Positive double peso,
@@ -52,11 +62,12 @@ public class CalculoIMCTest {
         assertEquals("Separador inválido, use ponto decimal", exception.getMessage());
     }
 
+    // Geradores personalizados para testar valores extremos/improváveis
+
     @Provide
     Arbitrary<Double> pesosExtremos() {
         Arbitrary<Double> pesosValidos = Arbitraries.doubles().between(2.0, 300.0);
         Arbitrary<Double> pesosImprovaveis = Arbitraries.of(400.0);
-
         return Arbitraries.oneOf(pesosValidos, pesosImprovaveis);
     }
 
@@ -64,37 +75,23 @@ public class CalculoIMCTest {
     Arbitrary<Double> alturasExtremas() {
         Arbitrary<Double> alturasValidas = Arbitraries.doubles().between(0.5, 2.5);
         Arbitrary<Double> alturasImprovaveis = Arbitraries.of(0.1);
-
         return Arbitraries.oneOf(alturasValidas, alturasImprovaveis);
     }
 
     @Property
-    void testIMCComValoresExtremos(
-            @ForAll("pesosExtremos") double peso,
-            @ForAll("alturasExtremas") double altura
-    ) {
-        double imc = CalculoIMC.calcularIMC(peso, altura);
-
-        // IMC não deve ser negativo
-        Assertions.assertThat(imc).isGreaterThanOrEqualTo(0);
-
-        // (Opcional) Verifica se IMC segue a fórmula
-        double esperado = peso / (altura * altura);
-        Assertions.assertThat(imc).isCloseTo(esperado, Offset.offset(0.0001));
-    }
-
-    @Property
-    public void imcCalculadoCorretamente(
+    public void imcCalculadoCorretamenteComValoresNormais(
             @ForAll @DoubleRange(min = 2.0, max = 300.0) double peso,
             @ForAll @DoubleRange(min = 0.5, max = 2.5) double altura
     ) {
-        double imc = CalculoIMC.calcularIMC(peso, altura);
-        double expected = peso / (altura * altura);
+        assertCalculoIMCCorreto(peso, altura);
+    }
 
-        // Verifica a exatidão do cálculo com uma tolerância pequena
-        assertEquals(expected, imc, 0.0001, "O cálculo do IMC deve seguir a fórmula: peso / (altura * altura)");
-        // Garante que o IMC é sempre um valor positivo
-        assertTrue(imc > 0, "IMC deve ser um valor positivo");
+    @Property
+    public void imcCalculadoCorretamenteComValoresExtremos(
+            @ForAll("pesosExtremos") double peso,
+            @ForAll("alturasExtremas") double altura
+    ) {
+        assertCalculoIMCCorreto(peso, altura);
     }
 
     @Property
