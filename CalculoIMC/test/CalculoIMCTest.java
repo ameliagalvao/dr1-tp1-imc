@@ -3,155 +3,192 @@ import org.junit.jupiter.api.Test;
 
 public class CalculoIMCTest {
 
+    // ------------------- Peso ----------
+
     @Test
-    public void testEmptyPeso() {
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            CalculoIMC.parsePeso("");
-        });
-        assertEquals("Peso não pode ser vazio", exception.getMessage());
+    public void testPesoValorValido() {
+        assertEquals(70.0, CalculoIMC.parsePeso("70.0"));
     }
 
     @Test
-    public void testEmptyAltura() {
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            CalculoIMC.parseAltura("");
-        });
-        assertEquals("Altura não pode ser vazia", exception.getMessage());
+    public void testPesoValorValidoLimiteInferior() {
+        assertEquals(2.0, CalculoIMC.parsePeso("2.0"));
     }
 
     @Test
-    public void testInvalidSeparatorPeso() {
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            CalculoIMC.parsePeso("70,5");
-        });
-        assertEquals("Separador inválido, use ponto decimal", exception.getMessage());
+    public void testPesoValorValidoLimiteSuperior() {
+        assertEquals(300.0, CalculoIMC.parsePeso("300.0"));
     }
 
     @Test
-    public void testInvalidSeparatorAltura() {
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            CalculoIMC.parseAltura("1,75");
-        });
-        assertEquals("Separador inválido, use ponto decimal", exception.getMessage());
+    public void testPesoValorInvalidoLimiteInferior() {
+        Exception e = assertThrows(IllegalArgumentException.class, () -> CalculoIMC.parsePeso("1.99"));
+        assertEquals("Peso fora dos limites", e.getMessage());
     }
 
     @Test
-    public void testPesoOutOfRange() {
-        // Testa peso abaixo do mínimo
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            CalculoIMC.parsePeso("1.5");
-        });
-        assertEquals("Peso fora dos limites", exception.getMessage());
-
-        // Testa peso acima do máximo
-        Exception exception2 = assertThrows(IllegalArgumentException.class, () -> {
-            CalculoIMC.parsePeso("400");
-        });
-        assertEquals("Peso fora dos limites", exception2.getMessage());
+    public void testPesoValorInvalidoLimiteSuperior() {
+        Exception e = assertThrows(IllegalArgumentException.class, () -> CalculoIMC.parsePeso("300.1"));
+        assertEquals("Peso fora dos limites", e.getMessage());
     }
 
     @Test
-    public void testAlturaOutOfRange() {
-        // Testa altura abaixo do mínimo
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            CalculoIMC.parseAltura("0.3");
-        });
-        assertEquals("Altura fora dos limites", exception.getMessage());
-
-        // Testa altura acima do máximo
-        Exception exception2 = assertThrows(IllegalArgumentException.class, () -> {
-            CalculoIMC.parseAltura("3.0");
-        });
-        assertEquals("Altura fora dos limites", exception2.getMessage());
+    public void testPesoValorVazio() {
+        Exception e = assertThrows(IllegalArgumentException.class, () -> CalculoIMC.parsePeso(""));
+        assertEquals("Peso não pode ser vazio", e.getMessage());
     }
 
     @Test
-    public void testCalcularIMC_ValorNormal() {
-        // 70 / (1.75 * 1.75) = 22.857142857...
+    public void testPesoSeparadorInvalido() {
+        Exception e = assertThrows(IllegalArgumentException.class, () -> CalculoIMC.parsePeso("70,5"));
+        assertEquals("Separador inválido, use ponto decimal", e.getMessage());
+    }
+
+    @Test
+    public void testPesoValorNaoNumerico() {
+        Exception e = assertThrows(NumberFormatException.class, () -> CalculoIMC.parsePeso("abc"));
+    }
+
+    // ------------------- Altura -------------
+
+    @Test
+    public void testAlturaValorValido() {
+        assertEquals(1.75, CalculoIMC.parseAltura("1.75"));
+    }
+
+    @Test
+    public void testAlturaValorValidoLimiteInferior() {
+        assertEquals(0.5, CalculoIMC.parseAltura("0.5"));
+    }
+
+    @Test
+    public void testAlturaValorValidoLimiteSuperior() {
+        assertEquals(2.5, CalculoIMC.parseAltura("2.5"));
+    }
+
+    @Test
+    public void testAlturaValorInvalidoLimiteInferior() {
+        Exception e = assertThrows(IllegalArgumentException.class, () -> CalculoIMC.parseAltura("0.49"));
+        assertEquals("Altura fora dos limites", e.getMessage());
+    }
+
+    @Test
+    public void testAlturaValorInvalidoLimiteSuperior() {
+        Exception e = assertThrows(IllegalArgumentException.class, () -> CalculoIMC.parseAltura("2.51"));
+        assertEquals("Altura fora dos limites", e.getMessage());
+    }
+
+    @Test
+    public void testAlturaValorVazio() {
+        Exception e = assertThrows(IllegalArgumentException.class, () -> CalculoIMC.parseAltura(""));
+        assertEquals("Altura não pode ser vazia", e.getMessage());
+    }
+
+    @Test
+    public void testAlturaSeparadorInvalido() {
+        Exception e = assertThrows(IllegalArgumentException.class, () -> CalculoIMC.parseAltura("1,75"));
+        assertEquals("Separador inválido, use ponto decimal", e.getMessage());
+    }
+
+    @Test
+    public void testAlturaValorNaoNumerico() {
+        Exception e = assertThrows(NumberFormatException.class, () -> CalculoIMC.parseAltura("xyz"));
+    }
+
+    // ----------------- calcularIMC ----------------
+
+    @Test
+    public void testCalcularIMCValorValido() {
         double imc = CalculoIMC.calcularIMC(70, 1.75);
         assertEquals(22.8571, imc, 0.0001);
     }
 
     @Test
-    public void testCalcularIMC_ValorMenor() {
-        // 50 / (1.60 * 1.60) = 19.53
-        double imc = CalculoIMC.calcularIMC(50, 1.60);
-        assertEquals(19.53, imc, 0.01);
+    public void testCalcularIMCValorValidoLimiteInferior() {
+        double imc = CalculoIMC.calcularIMC(2.0, 0.5);
+        assertEquals(8.0, imc, 0.01);
     }
 
     @Test
-    public void testClassificarIMC_MagrezaGrave() {
+    public void testCalcularIMCValorValidoLimiteSuperior() {
+        double imc = CalculoIMC.calcularIMC(300.0, 2.5);
+        assertEquals(48.0, imc, 0.01);
+    }
+
+    // --------- classificarIMC ------------
+
+    @Test
+    public void testClassificarIMCMagrezaGraveLimiteSuperior() {
         assertEquals("Magreza grave", CalculoIMC.classificarIMC(15.9));
     }
 
     @Test
-    public void testClassificarIMC_MagrezaModerada_16() {
+    public void testClassificarIMCMagrezaModeradaLimiteInferior() {
         assertEquals("Magreza moderada", CalculoIMC.classificarIMC(16.0));
     }
 
     @Test
-    public void testClassificarIMC_MagrezaModerada_16_5() {
-        assertEquals("Magreza moderada", CalculoIMC.classificarIMC(16.5));
+    public void testClassificarIMCMagrezaModeradaLimiteSuperior() {
+        assertEquals("Magreza moderada", CalculoIMC.classificarIMC(16.9));
     }
 
     @Test
-    public void testClassificarIMC_MagrezaLeve_17() {
+    public void testClassificarIMCMagrezaLeveLimiteInferior() {
         assertEquals("Magreza leve", CalculoIMC.classificarIMC(17.0));
     }
 
     @Test
-    public void testClassificarIMC_MagrezaLeve_18_0() {
-        assertEquals("Magreza leve", CalculoIMC.classificarIMC(18.0));
+    public void testClassificarIMCMagrezaLeveLimiteSuperior() {
+        assertEquals("Magreza leve", CalculoIMC.classificarIMC(18.4));
     }
 
     @Test
-    public void testClassificarIMC_Saudavel_18_5() {
+    public void testClassificarIMCSaudavelLimiteInferior() {
         assertEquals("Saudável", CalculoIMC.classificarIMC(18.5));
     }
 
     @Test
-    public void testClassificarIMC_Saudavel_24_9() {
+    public void testClassificarIMCSaudavelLimiteSuperior() {
         assertEquals("Saudável", CalculoIMC.classificarIMC(24.9));
     }
 
     @Test
-    public void testClassificarIMC_Sobrepeso_25() {
+    public void testClassificarIMCSobrepesoLimiteInferior() {
         assertEquals("Sobrepeso", CalculoIMC.classificarIMC(25.0));
     }
 
     @Test
-    public void testClassificarIMC_Sobrepeso_29_9() {
+    public void testClassificarIMCSobrepesoLimiteSuperior() {
         assertEquals("Sobrepeso", CalculoIMC.classificarIMC(29.9));
     }
 
     @Test
-    public void testClassificarIMC_ObesidadeI_30() {
+    public void testClassificarIMCObesidadeILimiteInferior() {
         assertEquals("Obesidade Grau I", CalculoIMC.classificarIMC(30.0));
     }
 
     @Test
-    public void testClassificarIMC_ObesidadeI_34_9() {
+    public void testClassificarIMCObesidadeILimiteSuperior() {
         assertEquals("Obesidade Grau I", CalculoIMC.classificarIMC(34.9));
     }
 
     @Test
-    public void testClassificarIMC_ObesidadeII_35() {
+    public void testClassificarIMCObesidadeIILimiteInferior() {
         assertEquals("Obesidade Grau II", CalculoIMC.classificarIMC(35.0));
     }
 
     @Test
-    public void testClassificarIMC_ObesidadeII_39_9() {
+    public void testClassificarIMCObesidadeIILimiteSuperior() {
         assertEquals("Obesidade Grau II", CalculoIMC.classificarIMC(39.9));
     }
 
     @Test
-    public void testClassificarIMC_ObesidadeIII_40() {
+    public void testClassificarIMCObesidadeIIILimiteInferior() {
         assertEquals("Obesidade Grau III", CalculoIMC.classificarIMC(40.0));
     }
 
     @Test
-    public void testClassificarIMC_ObesidadeIII_50() {
+    public void testClassificarIMCObesidadeIIILimiteSuperior() {
         assertEquals("Obesidade Grau III", CalculoIMC.classificarIMC(50.0));
     }
-
 }
